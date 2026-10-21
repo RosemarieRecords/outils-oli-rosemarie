@@ -1,0 +1,10 @@
+{
+  "name": "asana-rosemarie-section-claude",
+  "private": true,
+  "type": "module",
+  "description": "Automatisation personnelle d'Olivier (Rosemarie Records) : une tâche déposée dans la section ✳️CLAUDE de Mes tâches lance la routine « Exécution tâches Asana Claude ».",
+  "engines": { "node": "24.x" },
+  "scripts": {
+    "test": "node scripts/banc.mjs"
+  }
+}
