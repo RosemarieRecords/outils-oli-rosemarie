@@ -1,10 +1,10 @@
 {
-  "name": "asana-rosemarie-section-claude",
+  "name": "outils-oli-rosemarie",
   "private": true,
   "type": "module",
-  "description": "Automatisation personnelle d'Olivier (Rosemarie Records) : une tâche déposée dans la section ✳️CLAUDE de Mes tâches lance la routine « Exécution tâches Asana Claude ».",
+  "description": "Outils et automatisations d'Olivier Grenier-Robert dans le cadre de ses fonctions chez Rosemarie Records.",
   "engines": { "node": "24.x" },
   "scripts": {
-    "test": "node scripts/banc.mjs"
+    "test": "node scripts/banc-asana-section-claude.mjs"
   }
 }

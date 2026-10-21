@@ -1,7 +1,7 @@
-// POST /api/webhook : receveur du webhook Asana (liste Mes tâches d'Olivier).
+// POST /api/asana-section-claude/webhook : receveur du webhook Asana (liste Mes tâches d'Olivier).
 //
 // 1. Poignée de main (en-tête X-Hook-Secret) : acceptée SEULEMENT pendant une
-//    fenêtre ouverte par /api/register (clé « handshake-open », 2 min). Sans
+//    fenêtre ouverte par /api/asana-section-claude/register (clé « handshake-open », 2 min). Sans
 //    cette garde, n'importe qui pourrait créer un webhook Asana vers cette URL
 //    et remplacer le secret. Le secret est stocké dans Redis.
 // 2. Événement (en-tête X-Hook-Signature) : HMAC-SHA256 du corps brut avec le
@@ -11,9 +11,11 @@
 // GET = santé (aucun secret exposé).
 
 import crypto from "node:crypto";
-import { redisKv, redisConfigured } from "../lib/redis.js";
-import { triggerFromWebhook, fireConfig } from "../lib/core.js";
-import { fetchTask } from "../lib/asana.js";
+import { kvFor, redisConfigured } from "../../lib/redis.js";
+import { triggerFromWebhook, fireConfig } from "../../lib/asana-section-claude/core.js";
+import { fetchTask } from "../../lib/asana.js";
+
+const redisKv = kvFor("asana-section-claude");
 
 export const config = { api: { bodyParser: false } };
 

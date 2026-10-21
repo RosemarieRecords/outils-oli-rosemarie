@@ -1,16 +1,18 @@
-// POST /api/register : inscrit (ou réinscrit) le webhook Asana sur la liste
+// POST /api/asana-section-claude/register : inscrit (ou réinscrit) le webhook Asana sur la liste
 // Mes tâches d'Olivier. Protégé par l'en-tête « x-admin-key » = ADMIN_KEY.
 // GET (même en-tête) : liste les webhooks existants de ce relais.
 //
 // Séquence : ouvre la fenêtre de poignée de main (2 min), résout le GID de
-// la liste Mes tâches, POST /webhooks vers https://<hôte>/api/webhook ; Asana
+// la liste Mes tâches, POST /webhooks vers https://<hôte>/api/asana-section-claude/webhook ; Asana
 // fait la poignée de main avant de répondre. Le filtre « task / added » est
 // retenté sans filtre si Asana le refuse.
 
 import crypto from "node:crypto";
-import { redisKv, redisConfigured } from "../lib/redis.js";
-import { idsFromEnv } from "../lib/core.js";
-import { asana } from "../lib/asana.js";
+import { kvFor, redisConfigured } from "../../lib/redis.js";
+import { idsFromEnv } from "../../lib/asana-section-claude/core.js";
+import { asana } from "../../lib/asana.js";
+
+const redisKv = kvFor("asana-section-claude");
 
 function authorized(req) {
   const expected = String(process.env.ADMIN_KEY || "");
@@ -21,7 +23,7 @@ function authorized(req) {
 
 function target(req) {
   const host = req.headers["x-forwarded-host"] || req.headers.host;
-  return `https://${host}/api/webhook`;
+  return `https://${host}/api/asana-section-claude/webhook`;
 }
 
 export default async function handler(req, res) {

@@ -1,9 +1,9 @@
 // Banc hors réseau : Asana, Redis et /fire simulés. `npm test`.
 import assert from "node:assert/strict";
-import { extractCandidates, triggerFromWebhook, fireConfig, buildFireText, FIRE_PAYLOAD_VERSION, DEFAULT_IDS as IDS } from "../lib/core.js";
+import { extractCandidates, triggerFromWebhook, fireConfig, buildFireText, FIRE_PAYLOAD_VERSION, DEFAULT_IDS as IDS } from "../lib/asana-section-claude/core.js";
 
 const URL = "https://api.anthropic.com/v1/claude_code/routines/trig_01Qk5UmhxsCAoid8RhcAqfx2/fire";
-const ENV = { ROUTINE_FIRE_URL: URL, ROUTINE_TOKEN: "sk-ant-oat01-banc" };
+const ENV = { SECTION_CLAUDE_ROUTINE_FIRE_URL: URL, SECTION_CLAUDE_ROUTINE_TOKEN: "sk-ant-oat01-banc" };
 let n = 0;
 const cas = async (nom, fn) => { await fn(); console.log(`ok ${++n} - ${nom}`); };
 
@@ -35,7 +35,7 @@ await cas("extraction : section = certain, autre section et projet ignorés, lis
 
 await cas("non configuré = no-op ; URL hors api.anthropic.com refusée", async () => {
   assert.equal((await triggerFromWebhook({ events: [] }, { env: {} })).reason, "non_configure");
-  assert.equal(fireConfig({ ...ENV, ROUTINE_FIRE_URL: "https://exemple.com/fire" }).reason, "url_invalide");
+  assert.equal(fireConfig({ ...ENV, SECTION_CLAUDE_ROUTINE_FIRE_URL: "https://exemple.com/fire" }).reason, "url_invalide");
 });
 
 await cas("tâche déposée : un /fire, texte constant + GID, jeton en en-tête", async () => {
@@ -68,7 +68,7 @@ await cas("verrou : même event livré deux fois = un seul /fire", async () => {
 
 await cas("plafond quotidien atteint = aucun /fire", async () => {
   const appels = [];
-  const r = await triggerFromWebhook({ events: [dansSection("41")] }, { env: { ...ENV, MAX_FIRES_PER_DAY: "1" }, kv: { ...kvMemoire(), incr: async () => 2 }, fetchTask: async (g) => tache(g), fetchImpl: fetchOk(appels) });
+  const r = await triggerFromWebhook({ events: [dansSection("41")] }, { env: { ...ENV, SECTION_CLAUDE_MAX_FIRES_PER_DAY: "1" }, kv: { ...kvMemoire(), incr: async () => 2 }, fetchTask: async (g) => tache(g), fetchImpl: fetchOk(appels) });
   assert.equal(appels.length, 0);
   assert.equal(r.skipped[0].reason, "plafond_quotidien");
 });
