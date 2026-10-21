@@ -13,7 +13,7 @@
 import crypto from "node:crypto";
 import { kvFor, redisConfigured } from "../../lib/redis.js";
 import { triggerFromWebhook, fireConfig } from "../../lib/asana-section-claude/core.js";
-import { fetchTask } from "../../lib/asana.js";
+import { fetchTask, fetchStory } from "../../lib/asana.js";
 
 const redisKv = kvFor("asana-section-claude");
 
@@ -79,6 +79,6 @@ export default async function handler(req, res) {
     payload = null;
   }
   await redisKv.set("last-event-at", new Date().toISOString()).catch(() => {});
-  const summary = await triggerFromWebhook(payload, { kv: redisKv, fetchTask, log });
+  const summary = await triggerFromWebhook(payload, { kv: redisKv, fetchTask, fetchStory, log });
   return res.status(200).json({ ok: true, fired: summary.fired.length, skipped: summary.skipped.length });
 }

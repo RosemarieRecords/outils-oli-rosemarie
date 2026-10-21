@@ -28,20 +28,30 @@ Règles pour ajouter un outil :
 
 ## Outil 1 : asana-section-claude
 
-Déposer une tâche dans la section ✳️CLAUDE de Mes tâches (Asana, espace Rosemarie Records) lance la routine claude.ai « Exécution tâches Asana Claude » sur cette tâche, en général dans la minute. Le passage horaire de la routine reste le filet de sécurité, notamment pour les réponses aux questions ⚠️ (un commentaire ne déclenche rien en temps réel).
+Lance la routine claude.ai « Exécution tâches Asana Claude » sur une tâche précise, en général dans la minute, dans deux cas :
+- une tâche est déposée dans la section ✳️CLAUDE de Mes tâches (Asana, espace Rosemarie Records) ;
+- un humain commente une tâche de la section qui porte ⚠️, ✅ ou ❌ (réponse à une question, demande de révision, déblocage).
+
+Le passage horaire de la routine reste le filet de sécurité.
 
 ```
 Asana (ajout d'une tâche à Mes tâches)
   → POST /api/asana-section-claude/webhook (signature HMAC vérifiée)
   → relecture de la tâche : non complétée, assignée à Olivier, section ✳️CLAUDE, titre sans 🔄
   → verrou par tâche (30 min) + plafond quotidien (Redis)
+
+Asana (commentaire ajouté à une tâche)
+  → relecture du commentaire : vrai commentaire, ne commence pas par 🤖
+  → relecture de la tâche : section ✳️CLAUDE, non complétée, titre en ⚠️, ✅ ou ❌
+  → verrou par commentaire (30 min) + même plafond quotidien
   → POST /fire de la routine (texte : version + GID seulement)
 ```
 
 Garde-fous :
 - La poignée de main Asana n'est acceptée que pendant les 2 minutes ouvertes par `/register` : personne ne peut remplacer le secret en créant son propre webhook vers cette URL.
 - Aucun texte saisi dans Asana ne transite vers la routine : elle relit la tâche elle-même.
-- Les renommages faits par la routine (🔄 ✅ ⚠️ ❌) sont des événements `changed`, ignorés : pas de boucle.
+- Les renommages faits par la routine (🔄 ✅ ⚠️ ❌) sont des événements `changed`, ignorés ; ses commentaires commencent par « 🤖 » et sont ignorés : pas de boucle.
+- Un commentaire posé pendant que la tâche est en 🔄 ne relance rien ; le passage horaire le rattrape.
 - Redis en erreur : aucun déclenchement (fermé par défaut).
 - Le jeton de routine ne peut partir que vers `https://api.anthropic.com/v1/claude_code/routines/trig_…/fire`.
 
@@ -52,10 +62,11 @@ Garde-fous :
 | `SECTION_CLAUDE_MAX_FIRES_PER_DAY` | Optionnel, 20 par défaut ; `0` coupe sans retirer le jeton |
 | `SECTION_CLAUDE_SECTION_GID`, `SECTION_CLAUDE_USER_GID`, `SECTION_CLAUDE_WORKSPACE_GID` | Optionnels, valeurs par défaut dans `lib/asana-section-claude/core.js` |
 
-Mise en service :
+Mise en service (et après tout changement des filtres du webhook) :
 1. Variables posées, déploiement en production. `GET /api/asana-section-claude/webhook` répond `{ ok, redis, fire }`.
 2. Inscription du webhook (PowerShell) :
    `curl.exe -X POST https://<domaine>/api/asana-section-claude/register -H "x-admin-key: <ADMIN_KEY>"`
+   La commande supprime ensuite les anciens webhooks de ce relais : elle sert aussi de réinscription.
 3. Vérification : `curl.exe https://<domaine>/api/asana-section-claude/register -H "x-admin-key: <ADMIN_KEY>"` liste le webhook et la date du dernier événement reçu.
 4. Test : déposer une tâche dans ✳️CLAUDE ; le titre doit passer à 🔄 dans la minute.
 
