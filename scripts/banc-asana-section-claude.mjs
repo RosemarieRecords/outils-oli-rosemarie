@@ -103,7 +103,7 @@ await cas("texte du /fire sans contenu saisi dans Asana", async () => {
 });
 
 const commentaire = (storyGid, taskGid, subtype = "comment_added") => ({ action: "added", resource: { gid: storyGid, resource_type: "story", resource_subtype: subtype }, parent: { gid: taskGid, resource_type: "task" } });
-const story = (gid, taskGid, text, extra = {}) => ({ gid, text, resource_subtype: "comment_added", target: { gid: taskGid }, ...extra });
+const story = (gid, taskGid, text, extra = {}) => ({ gid, text, resource_subtype: "comment_added", target: { gid: taskGid }, created_by: { gid: IDS.userGid }, ...extra });
 
 await cas("extraction des commentaires : comment_added sur une tâche seulement", async () => {
   const c = extractCommentCandidates({ events: [
@@ -165,6 +165,17 @@ await cas("même commentaire livré deux fois : un seul /fire", async () => {
   await triggerFromWebhook({ events: [commentaire("961", "96")] }, ctx);
   await triggerFromWebhook({ events: [commentaire("961", "96")] }, ctx);
   assert.equal(appels.length, 1);
+});
+
+await cas("commentaire d'un collègue : ignoré, seul Olivier relance", async () => {
+  const appels = [];
+  const r = await triggerFromWebhook({ events: [commentaire("971", "97")] }, {
+    env: ENV, kv: kvMemoire(), fetchImpl: fetchOk(appels),
+    fetchTask: async (g) => tache(g, { name: "⚠️ Bio" }),
+    fetchStory: async (g) => story(g, "97", "Je pense que oui", { created_by: { gid: "42" } }),
+  });
+  assert.equal(appels.length, 0);
+  assert.equal(r.skipped[0].reason, "autre_auteur");
 });
 
 console.log(`\n${n} cas, tous verts.`);

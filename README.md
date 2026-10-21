@@ -30,7 +30,7 @@ Règles pour ajouter un outil :
 
 Lance la routine claude.ai « Exécution tâches Asana Claude » sur une tâche précise, en général dans la minute, dans deux cas :
 - une tâche est déposée dans la section ✳️CLAUDE de Mes tâches (Asana, espace Rosemarie Records) ;
-- un humain commente une tâche de la section qui porte ⚠️, ✅ ou ❌ (réponse à une question, demande de révision, déblocage).
+- Olivier commente une tâche de la section qui porte ⚠️, ✅ ou ❌ (réponse à une question, demande de révision, déblocage). Un commentaire d'un collègue ne relance rien en temps réel.
 
 Le passage horaire de la routine reste le filet de sécurité.
 
@@ -41,7 +41,7 @@ Asana (ajout d'une tâche à Mes tâches)
   → verrou par tâche (30 min) + plafond quotidien (Redis)
 
 Asana (commentaire ajouté à une tâche)
-  → relecture du commentaire : vrai commentaire, ne commence pas par 🤖
+  → relecture du commentaire : vrai commentaire, écrit par Olivier, ne commence pas par 🤖
   → relecture de la tâche : section ✳️CLAUDE, non complétée, titre en ⚠️, ✅ ou ❌
   → verrou par commentaire (30 min) + même plafond quotidien
   → POST /fire de la routine (texte : version + GID seulement)
