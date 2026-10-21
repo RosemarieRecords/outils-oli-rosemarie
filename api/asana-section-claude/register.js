@@ -6,7 +6,7 @@
 // la liste Mes tâches, POST /webhooks vers https://<hôte>/api/asana-section-claude/webhook ; Asana
 // fait la poignée de main avant de répondre. Filtres : tâche ajoutée et story
 // ajoutée (commentaires) ; retentés sans filtre si Asana les refuse. Les
-// anciens webhooks de ce relais sont ensuite supprimés.
+// webhooks existants de ce relais sont supprimés avant la création.
 
 import crypto from "node:crypto";
 import { kvFor, redisConfigured } from "../../lib/redis.js";
@@ -43,6 +43,17 @@ export default async function handler(req, res) {
     const utl = await asana(`/users/${ids.userGid}/user_task_list`, { query: { workspace: ids.workspaceGid, opt_fields: "gid" } });
     if (!utl?.gid) return res.status(500).json({ error: "Liste Mes tâches introuvable" });
 
+    // Réinscription : Asana refuse deux webhooks sur la même ressource et la
+    // même cible ; les webhooks existants de ce relais sont donc supprimés
+    // d'abord. Si la création échoue ensuite, relancer la commande suffit.
+    const existants = (await asana("/webhooks", { query: { workspace: ids.workspaceGid, opt_fields: "gid,target" } }) || [])
+      .filter((h) => h.target === target(req));
+    const supprimes = [];
+    for (const h of existants) {
+      await asana(`/webhooks/${h.gid}`, { method: "DELETE" });
+      supprimes.push(h.gid);
+    }
+
     await redisKv.set("handshake-open", "1", 120);
     const create = (filters) =>
       asana("/webhooks", {
@@ -62,20 +73,6 @@ export default async function handler(req, res) {
       warning = `Filtre refusé par Asana (${err.message}) : webhook sans filtre, le relais trie lui-même.`;
       await redisKv.set("handshake-open", "1", 120);
       hook = await create(null);
-    }
-    // Réinscription : le nouveau webhook a remplacé le secret ; les anciens
-    // webhooks de ce relais sont supprimés pour ne jamais recevoir deux fois
-    // le même événement (leurs livraisons seraient de toute façon rejetées).
-    const anciens = (await asana("/webhooks", { query: { workspace: ids.workspaceGid, opt_fields: "gid,target" } }) || [])
-      .filter((h) => h.target === target(req) && h.gid !== hook?.gid);
-    const supprimes = [];
-    for (const h of anciens) {
-      try {
-        await asana(`/webhooks/${h.gid}`, { method: "DELETE" });
-        supprimes.push(h.gid);
-      } catch {
-        // Un ancien webhook non supprimé reste rejeté par la signature.
-      }
     }
     return res.status(200).json({ ok: true, webhook: hook, userTaskList: utl.gid, anciensSupprimes: supprimes, ...(warning ? { warning } : {}) });
   } catch (err) {
